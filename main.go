@@ -1,12 +1,24 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
+	"strconv"
 )
 
 func main() {
-	PORTA := ":9000"
+	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor")   // retorna *int (um ponteiro)
+	flag.Parse()                              // sem isso, *n fica sempre no valor padrão
+	fmt.Println(*n)
+	PORTA := ""
+	if *n >= 1 && *n <= 65535 {
+		PORTA = ":9000"
+		fmt.Printf("[SERVIDOR] Porta %d esta no intervalo invalido\n[SERVIDOR] Executando na porta de fallback\n", *n)
+	} else {
+		PORTA = ":" + strconv.Itoa(*n)
+	}
+	
 	listener, err := net.Listen("tcp", PORTA)
 
 	if err != nil {
