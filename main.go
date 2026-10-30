@@ -13,10 +13,10 @@ func main() {
 	fmt.Println(*n)
 	PORTA := ""
 	if *n >= 1 && *n <= 65535 {
+		PORTA = ":" + strconv.Itoa(*n)
+	} else {
 		PORTA = ":9000"
 		fmt.Printf("[SERVIDOR] Porta %d esta no intervalo invalido\n[SERVIDOR] Executando na porta de fallback\n", *n)
-	} else {
-		PORTA = ":" + strconv.Itoa(*n)
 	}
 	
 	listener, err := net.Listen("tcp", PORTA)
