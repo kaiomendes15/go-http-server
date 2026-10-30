@@ -1,0 +1,27 @@
+# Binários gerados por `go build`
+/go-http-server
+*.exe
+*.out
+
+# Testes e cobertura
+*.test
+coverage.*
+
+# Workspace local do Go
+go.work
+go.work.sum
+
+# Variáveis de ambiente locais
+.env
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.swp
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Artefatos de entrega (o .zip é montado fora do repositório)
+*.zip
