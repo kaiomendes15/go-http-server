@@ -15,8 +15,8 @@ import (
 
 func main() {
 	// printf 'POST /x HTTP/1.1\r\nContent-Length: -5\r\n\r\n' | nc localhost 9000
-	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor")// retorna *int (um ponteiro)
-	flag.Parse() // sem isso, *n fica sempre no valor padrão
+	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor") // retorna *int (um ponteiro)
+	flag.Parse()                                                         // sem isso, *n fica sempre no valor padrão
 	fmt.Println(*n)
 	PORTA := ""
 
@@ -26,7 +26,7 @@ func main() {
 		PORTA = ":9000"
 		fmt.Printf("[SERVIDOR] Porta %d esta no intervalo invalido\n[SERVIDOR] Executando na porta de fallback\n", *n)
 	}
-	
+
 	listener, err := net.Listen("tcp", PORTA)
 
 	if err != nil {
@@ -48,7 +48,6 @@ func main() {
 		go handleClient(conn)
 	}
 
-
 }
 
 func handleClient(conn net.Conn) {
@@ -56,11 +55,11 @@ func handleClient(conn net.Conn) {
 	defer conn.Close()
 
 	fmt.Printf("[CONEXÃO] Nova conexão de %s\n", conn.RemoteAddr())
-	
+
 	reader := bufio.NewReader(conn)
 	// lib que permite ler linha, independente de quantos pacotes tcp chegaram
 
-	method, path, err := getRequestLine(reader)
+	method, path, version, err := getRequestLine(reader)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -74,31 +73,65 @@ func handleClient(conn net.Conn) {
 	fmt.Printf("[REQUEST] Método: %s | Path: %s | Content-Length: %d\n", method, path, contentLenght)
 
 	if method == "GET" {
-		// Quando o método da requisição for GET, o servidor deve procurar o arquivo correspondente ao path dentro do diretório
-		contentPath := filepath.Join("public", path)
-		// essa lib ja eh multiplataforma, serve tanto para construir o path no linux `/`, quanto no windows `\`
-		fmt.Printf("SYSTEM FILE PATH -> %s\n", contentPath)
-		contentType, err := getContentType(contentPath)
+		response, err := getContent(path, version)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println(contentType)
 
-		fileBytes, err := os.ReadFile(contentPath)
+		_, err = conn.Write(response)
 		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				fmt.Println("[ERRO 404] Arquivo não encontrado")
-				return // aqui vou montar a resposta com a pagina 404
-			}
+			fmt.Printf("[ERRO] Problema ao retornar response para o client: %v\n", err)
+		}
+	}
+}
 
-			fmt.Println("[ERRO] Erro ao ler o arquivo.")
-			return
+func getContent(
+	path string,
+	version string) ([]byte, error) {
+	// Quando o método da requisição for GET, o servidor deve procurar o arquivo correspondente ao path dentro do diretório
+	contentPath := filepath.Join("public", path)
+	// essa lib ja eh multiplataforma, serve tanto para construir o path no linux `/`, quanto no windows `\`
+	fmt.Printf("SYSTEM FILE PATH -> %s\n", contentPath)
+	contentType, err := getContentType(contentPath)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(contentType)
+
+	fileBytes, err := os.ReadFile(contentPath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("[ERRO 404] Arquivo não encontrado: %v", err) // aqui vou montar a resposta com a pagina 404
 		}
 
-		contentLength := len(fileBytes)
-		fmt.Printf("[ARQUIVO] Servindo %s (%s, %d bytes)\n", path, contentType, contentLength)
+		return nil, fmt.Errorf("[ERRO] Erro ao ler o arquivo: %v", err)
 	}
+
+	contentLength := len(fileBytes)
+	fmt.Printf("[ARQUIVO] Servindo %s (%s, %d bytes)\n", path, contentType, contentLength)
+
+	responseHeader := buildHeader(version, 200, "OK", contentType, contentLength)
+	fmt.Println(responseHeader)
+	response := buildResponse(responseHeader, fileBytes)
+
+	return response, nil
+}
+
+func buildHeader(
+	version string,
+	status int,
+	message string,
+	contentType string,
+	contentLength int,
+) string {
+	header := version + " " + strconv.Itoa(status) + " " + message + "\r\nContent-Type: " + contentType + "\r\n" + "Content-Length: " + strconv.Itoa(contentLength) + "\r\n\r\n"
+
+	return header
+}
+
+func buildResponse(header string, body []byte) []byte {
+	return append([]byte(header), body...) // ... pra aceitar slice de bytes
 }
 
 func getContentType(contentPath string) (string, error) {
@@ -109,25 +142,25 @@ func getContentType(contentPath string) (string, error) {
 	// fmt.Println("File Extension:", fileExtension)
 	contentType := ""
 	switch strings.TrimSpace(fileExtension) {
-		case ".html":
-			contentType = "text/html"
-		case ".css":
-			contentType = "text/css"
-		case ".png":
-			contentType = "image/png"
-		case ".jpg":
-			contentType = "image/jpeg"
-		default:
-			return contentType, fmt.Errorf("[ERRO] formato de arquivo inválido.")
+	case ".html":
+		contentType = "text/html"
+	case ".css":
+		contentType = "text/css"
+	case ".png":
+		contentType = "image/png"
+	case ".jpg":
+		contentType = "image/jpeg"
+	default:
+		return contentType, fmt.Errorf("[ERRO] formato de arquivo inválido.")
 	}
 
 	return contentType, nil
 }
 
-func getRequestLine(reader *bufio.Reader) (string, string, error) {
+func getRequestLine(reader *bufio.Reader) (string, string, string, error) {
 	requestLine, err := reader.ReadString('\n') // le uma linha so
 	if err != nil {
-		return "", "", fmt.Errorf("[ERRO] Erro ao ler a request line: %v", err)
+		return "", "", "", fmt.Errorf("[ERRO] Erro ao ler a request line: %v", err)
 	}
 	requestLine = strings.TrimSpace(requestLine) // so p tirar os \r\n do final
 	// fmt.Printf("\n--- Linha Inicial ---\n%s\n", requestLine)
@@ -136,15 +169,15 @@ func getRequestLine(reader *bufio.Reader) (string, string, error) {
 	if len(requestLineItems) == 3 {
 		method := requestLineItems[0]
 		path := normalizeHttpPath(requestLineItems[1])
-		return method, path, nil
+		version := requestLineItems[2]
+		return method, path, version, nil
 	}
 
-	return "", "", fmt.Errorf("[ERRO] linha inicial do HTTP malformada")
-
+	return "", "", "", fmt.Errorf("[ERRO] linha inicial do HTTP malformada")
 
 }
 
-func normalizeHttpPath(path string) (string) {
+func normalizeHttpPath(path string) string {
 	if path == "/" {
 		return "/index.html"
 	}
@@ -157,7 +190,7 @@ func getContentLenght(reader *bufio.Reader) (int, error) {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
-			return 0, fmt.Errorf("[ERRO] Erro ao ler o header: %v\n", err)
+			return 0, fmt.Errorf("[ERRO] Erro ao ler o header: %v", err)
 		}
 		line = strings.TrimSpace(line)
 
@@ -168,11 +201,11 @@ func getContentLenght(reader *bufio.Reader) (int, error) {
 		if strings.HasPrefix(strings.ToLower(line), "content-length:") {
 			_, err := fmt.Sscanf(strings.ToLower(line), "content-length: %d", &contentLength) // endereco de memoria pra atualizar a variavel, coloca %d dentro de contentLenght
 			if err != nil {
-				return 0, fmt.Errorf("[ERRO] Content-Lenght inválido: %v", err)
+				return 0, fmt.Errorf("[ERRO] Content-Length inválido: %v", err)
 			}
 
 			if contentLength < 0 {
-				return 0, fmt.Errorf("[ERRO] Content-Lenght inválido\n")
+				return 0, fmt.Errorf("[ERRO] Content-Length inválido")
 			}
 		}
 	}
