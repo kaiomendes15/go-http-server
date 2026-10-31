@@ -377,3 +377,16 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Commitou o meu `main.go` e os arquivos de `./public/` sem coautoria da IA e, em outro commit, este diário.
 - **O que aprendi ou aproveitei:** coloquei o `return` de volta no tratamento do erro do `getContent`.
 - **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~19:10 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R3 (card R3.5), R4 (card R4.1), assets (card A.1) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que achava ter concluído o R3.5 e pedi que a ferramenta verificasse. Depois pedi que marcasse o R3.5 como concluído, revisasse o quadro do Trello conforme o que já foi implementado e commitasse tudo.
+- **O que a IA respondeu ou fez:**
+  - Compilou o código numa pasta temporária e simulou as requisições do navegador com `curl` (`/`, `/style.css`, `/neymar.jpg`, `/about.html` e `/cris.jpg`). Todas voltaram com 200 e o Content-Type correto, e o terminal mostrou um log `[ARQUIVO]` para cada arquivo, com o tipo e o tamanho.
+  - Apontou que o `style.css` estava vazio (0 bytes), o que impediria o "CSS aplicado" do caso de teste. Eu salvei o arquivo com as regras, e a ferramenta confirmou o conteúdo antes de concluir o card.
+  - Observou que o enunciado pede o log `[ARQUIVO]` depois de enviar o arquivo, mas o meu código imprime antes do `conn.Write`.
+  - Moveu o R3.5 para Concluído. Na revisão do quadro, concluiu o A.1 (os arquivos de `./public/` existem e o `index.html` referencia o CSS e a imagem) e o R4.1 (o `errors.Is(err, fs.ErrNotExist)` já separa o arquivo inexistente, e o teste com `/nao.html` caiu no log `[ERRO 404]`). Com isso, moveu o R4.2 para A Fazer. Os cards A.2, R5.1 e E.1 continuam em A Fazer, porque ainda não existe o formulário nem a rota do POST.
+  - Commitou os meus arquivos de `./public/` sem coautoria da IA e, em outro commit, este diário.
+- **O que aprendi ou aproveitei:** a conferência dos logs `[ARQUIVO]` com o formato do enunciado e o lembrete do CSS vazio.
+- **O que NÃO foi usado:** **Decisão:** mantive o log `[ARQUIVO]` antes do `conn.Write`. Nenhum código foi gerado ou alterado.
