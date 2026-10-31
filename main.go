@@ -75,7 +75,35 @@ func handleClient(conn net.Conn) {
 		contentPath := filepath.Join("public", path)
 		// essa lib ja eh multiplataforma, serve tanto para construir o path no linux `/`, quanto no windows `\`
 		fmt.Printf("SYSTEM FILE PATH -> %s\n", contentPath)
+		contentType, err := getContentType(contentPath)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(contentType)
 	}
+}
+
+func getContentType(contentPath string) (string, error) {
+	// devo considerar:
+	// ./public/style.css
+	// ./public/img/imagem.png
+	fileExtension := filepath.Ext((contentPath))
+	// fmt.Println("File Extension:", fileExtension)
+	contentType := ""
+	switch strings.TrimSpace(fileExtension) {
+		case ".html":
+			contentType = "text/html"
+		case ".css":
+			contentType = "text/css"
+		case ".png":
+			contentType = "image/png"
+		case ".jpg":
+			contentType = "image/jpeg"
+		default:
+			return contentType, fmt.Errorf("[ERRO] formato de arquivo inválido.")
+	}
+
+	return contentType, nil
 }
 
 func getRequestLine(reader *bufio.Reader) (string, string, error) {
