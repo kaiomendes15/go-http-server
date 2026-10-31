@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -78,8 +81,23 @@ func handleClient(conn net.Conn) {
 		contentType, err := getContentType(contentPath)
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 		fmt.Println(contentType)
+
+		fileBytes, err := os.ReadFile(contentPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				fmt.Println("[ERRO 404] Arquivo não encontrado")
+				return // aqui vou montar a resposta com a pagina 404
+			}
+
+			fmt.Println("[ERRO] Erro ao ler o arquivo.")
+			return
+		}
+
+		contentLength := len(fileBytes)
+		fmt.Printf("[ARQUIVO] Servindo %s (%s, %d bytes)\n", path, contentType, contentLength)
 	}
 }
 
