@@ -253,3 +253,14 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
 - **Pergunta ou solicitação:** informei que testei o R2.3 (incluindo o `Content-Length` negativo) e pedi que a ferramenta atualizasse os cards e commitasse tudo, sem colocar a IA como coautora nos arquivos que ela não escreveu.
 - **O que a IA respondeu ou fez:** moveu o R2.3 para Concluído e o marcou como completo. Moveu o R2.4 (desbloqueado) para A Fazer. Separou o commit em dois: um com o meu `main.go` (parsing do R2), **sem** coautoria da IA, e outro com este diário, que ela escreveu, com a linha de coautoria.
 - **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~14:45 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R2 (cards R2.4 e R2.5) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que achava ter concluído o R2.4 (normalização de `/` para `/index.html`) e pedi que a ferramenta verificasse. Depois pedi que atualizasse os cards, commitasse o código e registrasse a verificação.
+- **O que a IA respondeu ou fez:**
+  - Leu o diff do meu `main.go` (sem alterá-lo), rodou o `go vet` (sem avisos), compilou o código numa pasta temporária e testou com `curl`: `/about.html`, `/` (o log mostrou `Path: /index.html`), um POST com `-d "a=1"` (`Content-Length: 3`), `/?x=1` e `/img/`. Confirmou que o R2.4 cumpre o critério de pronto e que os três cenários do R2.5 já passam pelo `curl`, faltando o teste no navegador.
+  - Apontou para eu decidir: a query string (`/?x=1`) não é normalizada e, no R3, viraria a busca de um arquivo inexistente; e há sobras de depuração (o `fmt.Println(*n)`, que imprime a porta antes do log `[SERVIDOR]`, e um comentário com o comando `nc` no início do `main`).
+  - Moveu o R2.4 para Concluído e o marcou como completo. Seguindo a regra do quadro, moveu para A Fazer os cards desbloqueados por ele: R2.5, R3.1, R3.2 e R5.1. Commitou o meu `main.go` sem coautoria da IA.
+- **O que aprendi ou aproveitei:** a confirmação de que o parsing do R2 está completo, e a pendência da query string para decidir no R3.1.
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
