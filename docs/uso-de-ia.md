@@ -324,3 +324,56 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Moveu o R3.3 para Concluído e o marcou como completo. Moveu para A Fazer os cards desbloqueados por ele: R3.4 (o R3.2 já estava concluído) e R4.1.
 - **O que aprendi ou aproveitei:** a confirmação de que o tamanho vem em bytes, e não em caracteres, e a pendência da ordem entre a verificação da extensão e a do 404, para resolver no R4.1.
 - **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~17:50 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** R3 (card R3.4) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** antes de começar o R3.4, perguntei se podia montar a resposta inteira como uma única string, com uma função genérica que recebe os argumentos e devolve a resposta pronta. Depois pedi que a ferramenta commitasse o que eu já tinha feito.
+- **O que a IA respondeu ou fez:**
+  - Explicou que funciona: em Go, uma `string` é uma sequência imutável de bytes que não precisa ser UTF-8 válido, então `string(conteudo)` preserva os bytes binários de um PNG, e `len` de uma string conta bytes. O custo é uma cópia extra do arquivo na memória, irrelevante neste projeto.
+  - Citou como alternativa montar como string só o cabeçalho (status line, headers e linha em branco) e enviar o body como `[]byte`, com dois `Write` ou com `append` num único slice.
+  - Observou que a função genérica também serve para o R4 (404), mudando só o status e o conteúdo. Lembrou os cuidados: `\r\n` em todas as linhas, a linha em branco antes do body e o `Content-Length` igual ao `len` dos bytes do body.
+  - Commitou o meu `main.go` (R3.3) sem coautoria da IA e, em outro commit, este diário.
+- **O que aprendi ou aproveitei:** segui a alternativa: o cabeçalho é montado como string e o body continua `[]byte`, sem passar por string. A função de cabeçalho recebe status, mensagem, Content-Type e tamanho, para ser reaproveitada no R4.
+- **O que NÃO foi usado:** a resposta inteira como string. Nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~18:05 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** R3 (card R3.4)
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** com o cabeçalho e o body já separados, perguntei como concatenar os dois e devolver como resposta.
+- **O que a IA respondeu ou fez:** explicou duas formas: `append([]byte(header), body...)`, que resulta num `[]byte` pronto para o `conn.Write`, ou `header + string(body)`, que exige converter de volta para `[]byte` no `Write`. Explicou que o `...` passa cada elemento do slice como um argumento separado do `append` e que o `conn.Write` devolve `(n, err)`. Lembrou que o socket transmite bytes, por isso o `Write` recebe `[]byte`.
+- **O que aprendi ou aproveitei:** usei o `append` com `...` numa função que junta cabeçalho e body.
+- **O que NÃO foi usado:** a concatenação com `string(body)`. Nenhum código foi gerado.
+
+### 2026-10-31 ~18:20 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** R3 (card R3.4)
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que tinha terminado o R3.4 e pedi que a ferramenta verificasse.
+- **O que a IA respondeu ou fez:**
+  - Leu o diff do meu `main.go` (sem alterá-lo), rodou o `go vet` (sem avisos), compilou o código numa pasta temporária e fez requisições com `curl`. `/`, um `.css` com "ç" e um `.png` binário voltaram com `HTTP/1.1 200 OK`, o Content-Type certo e o Content-Length igual ao tamanho do arquivo. O `cmp` confirmou que o body chegou idêntico ao arquivo.
+  - Apontou para eu decidir: a status line repete a versão que vem no pedido (com `HTTP/1.0`, a resposta sai `HTTP/1.0 200 OK`), enquanto o enunciado mostra `HTTP/1.1` fixo; e o erro do `conn.Write` não era verificado.
+  - Sugeriu rodar o `gofmt` e corrigir o comentário que chamava o `[]byte` de "array" (em Go, `[N]byte` e `[]byte` são tipos diferentes).
+- **O que aprendi ou aproveitei:** passei a verificar o erro do `Write`, rodei o `gofmt` e corrigi o comentário para "slice".
+- **O que NÃO foi usado:** mantive a versão vinda do pedido na status line. Nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~18:35 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** R3 (card R3.4)
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** depois de mover a leitura do arquivo para uma função `getContent`, o código parou de compilar e perguntei qual era o problema. Em seguida, perguntei se as outras tratativas de erro estavam corretas.
+- **O que a IA respondeu ou fez:**
+  - Identificou, testando numa cópia do código, dois erros de compilação: `_, err := conn.Write(...)` com `:=` sem variável nova (o `err` já existia e o `_` não conta) e o `missing return` no fim da função. Apontou três avisos do `go vet`: `fmt.Errorf` com o `err` como argumento, mas sem `%v` na string. Também observou que quem chamava a função descartava o erro, então os erros sumiam do log.
+  - Na revisão das tratativas, confirmou que a lógica estava correta e citou três detalhes: com `%v` o erro original se perde e o `errors.Is(err, fs.ErrNotExist)` deixa de funcionar fora da função (com `%w` ele continua funcionando), o que importa para o R4.1; mensagens terminadas em `\n` geravam uma linha em branco a mais no log; e a função devolvia a resposta e também a enviava, o que era redundante.
+- **O que aprendi ou aproveitei:** a diferença entre `:=` e `=`, a regra de que toda função com retorno precisa de `return` em todos os caminhos e o uso de `%v` no `Errorf`. Tirei os `\n` das mensagens e deixei o `Write` só no handler, com o `getContent` apenas montando a resposta. A diferença entre `%v` e `%w` fica para o R4.1.
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~18:55 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R3 (card R3.4) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** pedi uma nova verificação do R3.4. Depois de corrigir o que foi apontado, pedi que a ferramenta atualizasse o card, registrasse as interações neste diário e commitasse.
+- **O que a IA respondeu ou fez:**
+  - Compilou o código numa pasta temporária e testou com `curl`: `/` (276 bytes) e `/neymar.jpg` (31294 bytes, `image/jpeg`) voltaram com `HTTP/1.1 200 OK` e o Content-Length correto, e o `cmp` confirmou que o JPG chegou idêntico.
+  - Apontou que, no handler, faltava um `return` depois de imprimir o erro do `getContent`, e por isso o fluxo seguia para o `conn.Write` com a resposta `nil`. Confirmou que `/nao.html` e `/favicon.ico` aparecem no log e ainda não recebem resposta, o que é esperado até o R4.
+  - Moveu o R3.4 para Concluído e o marcou como completo. Nenhum card foi desbloqueado: o R3.5 depende do A.1, o R4.2 do R4.1 e o R6.3 do R6.1, todos ainda abertos.
+  - Commitou o meu `main.go` e os arquivos de `./public/` sem coautoria da IA e, em outro commit, este diário.
+- **O que aprendi ou aproveitei:** coloquei o `return` de volta no tratamento do erro do `getContent`.
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
