@@ -264,3 +264,31 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Moveu o R2.4 para Concluído e o marcou como completo. Seguindo a regra do quadro, moveu para A Fazer os cards desbloqueados por ele: R2.5, R3.1, R3.2 e R5.1. Commitou o meu `main.go` sem coautoria da IA.
 - **O que aprendi ou aproveitei:** a confirmação de que o parsing do R2 está completo, e a pendência da query string para decidir no R3.1.
 - **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~15:00 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R2 (card R2.5) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que executei no navegador o caso de teste do R2 (`/about.html` e `/`) e pedi que a ferramenta atualizasse os cards.
+- **O que a IA respondeu ou fez:** moveu o R2.5 para Concluído e o marcou como completo. O I.2 continua bloqueado, porque depende dos testes de R3 a R6.
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~15:05 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R3 (card R3.1) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** antes de começar o R3.1, pedi uma explicação breve sobre como mapear o path da requisição para um arquivo dentro de `./public/`.
+- **O que a IA respondeu ou fez:**
+  - Explicou o uso de `filepath.Join` em vez de concatenar strings e a diferença entre os pacotes `path` (URL) e `path/filepath` (disco). Explicou também tópicos fora do enunciado: path traversal (`/../main.go`) e formas de impedi-lo, decodificação de `%20` com `url.PathUnescape` e corte da query string.
+  - Respondi que a maior parte disso não era necessária: a meta é só receber o path no GET, buscar em `./public/` e responder. A IA concordou e resumiu o mínimo.
+  - A meu pedido, tirou do card R3.1 o critério de proteção contra `../` (e o trecho correspondente do título), deixou o path traversal como ponto de defesa fora do escopo e moveu o card para Em Andamento.
+- **O que aprendi ou aproveitei:** usei apenas a indicação do `filepath.Join`. **Decisão de escopo:** a proteção contra path traversal fica fora do projeto, por não ser exigida pelo enunciado.
+- **O que NÃO foi usado:** as técnicas contra path traversal, a decodificação de `%20` e o corte da query string. Nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~15:15 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R3 (cards R3.1 e R3.3) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que achava ter terminado o mapeamento do path (R3.1) e pedi que a ferramenta verificasse. Depois pedi que atualizasse os cards e registrasse a sessão neste diário.
+- **O que a IA respondeu ou fez:**
+  - Leu o diff do meu `main.go` (sem alterá-lo), compilou o código numa pasta temporária e testou com `curl`: `/style.css` → `public/style.css`, `/` → `public/index.html` e `/img/logo.png` → `public/img/logo.png`. Confirmou que o R3.1 cumpre o critério de pronto.
+  - Moveu o R3.1 para Concluído e o marcou como completo. Moveu o R3.3 (desbloqueado) para A Fazer.
+- **O que aprendi ou aproveitei:** -
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
