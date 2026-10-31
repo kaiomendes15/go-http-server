@@ -304,3 +304,23 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - A meu pedido, trocou o critério do card para "uma extensão desconhecida retorna erro", ajustou o ponto de defesa correspondente, moveu o R3.2 para Concluído e o marcou como completo. O R3.4 continua bloqueado pelo R3.3.
 - **O que aprendi ou aproveitei:** a conferência do `switch` com a tabela do enunciado. **Decisão de escopo:** uma extensão desconhecida retorna erro em vez de usar `application/octet-stream`.
 - **O que NÃO foi usado:** o fallback `application/octet-stream`. Nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~17:05 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** R3 (card R3.3)
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** antes de começar o R3.3, pedi uma explicação sobre como ler o arquivo como bytes e saber o tamanho exato dele.
+- **O que a IA respondeu ou fez:** explicou que `os.ReadFile` devolve o conteúdo inteiro em um `[]byte`, sem interpretar o conteúdo (serve igual para HTML e PNG), e que `len` do slice dá o tamanho exato em bytes, que é o valor do `Content-Length`. Lembrou que o `Content-Length` conta bytes e não caracteres (em UTF-8, "ç" ocupa 2 bytes). Citou o `os.Stat().Size()` como alternativa que dispensa ler o arquivo, desnecessária aqui porque o corpo será enviado de qualquer forma. Indicou também `errors.Is(err, fs.ErrNotExist)` para reconhecer o arquivo inexistente, que será útil no R4.1.
+- **O que aprendi ou aproveitei:** usei `os.ReadFile` + `len` e já deixei o `errors.Is(err, fs.ErrNotExist)` separando o caso de arquivo inexistente dos outros erros.
+- **O que NÃO foi usado:** o `os.Stat().Size()`. Nenhum código foi gerado.
+
+### 2026-10-31 ~17:20 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R3 (card R3.3) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que tinha concluído o R3.3 e pedi que a ferramenta verificasse o que foi implementado, atualizasse os cards e registrasse as interações neste diário.
+- **O que a IA respondeu ou fez:**
+  - Leu o diff do meu `main.go` (sem alterá-lo), rodou o `go vet` (sem avisos), compilou o código numa pasta temporária, com uma cópia de `./public/` e arquivos de teste, e fez requisições com `curl`.
+  - Os tamanhos lidos bateram com o `stat` dos arquivos: `index.html` com 224 bytes, um `.png` binário com 2048 bytes e um `.css` com "ç" com 30 bytes (29 caracteres, porque o "ç" ocupa 2 bytes). Um arquivo inexistente (`/nao.html`) caiu no ramo `[ERRO 404]`. Um diretório (`/dir.html`) e um arquivo sem permissão de leitura caíram no erro genérico de leitura.
+  - Apontou para eu decidir no R4.1: como o Content-Type é verificado antes da leitura, um arquivo inexistente com extensão fora da tabela (ex.: `/favicon.ico`, que o navegador pede sozinho) retorna o erro de extensão e nunca chega ao ramo 404.
+  - Moveu o R3.3 para Concluído e o marcou como completo. Moveu para A Fazer os cards desbloqueados por ele: R3.4 (o R3.2 já estava concluído) e R4.1.
+- **O que aprendi ou aproveitei:** a confirmação de que o tamanho vem em bytes, e não em caracteres, e a pendência da ordem entre a verificação da extensão e a do 404, para resolver no R4.1.
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
