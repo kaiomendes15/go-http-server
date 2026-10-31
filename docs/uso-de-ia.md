@@ -390,3 +390,14 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Commitou os meus arquivos de `./public/` sem coautoria da IA e, em outro commit, este diário.
 - **O que aprendi ou aproveitei:** a conferência dos logs `[ARQUIVO]` com o formato do enunciado e o lembrete do CSS vazio.
 - **O que NÃO foi usado:** **Decisão:** mantive o log `[ARQUIVO]` antes do `conn.Write`. Nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~19:25 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** documentação do repositório
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** pedi um `README.md` para o projeto, seguindo o mesmo esquema do README de outro repositório meu (go-calculator), e depois pedi que a ferramenta commitasse e registrasse neste diário.
+- **O que a IA respondeu ou fez:**
+  - Escreveu o `README.md` com as mesmas seções do go-calculator: introdução, tecnologias (badges e pacotes usados), protocolo (exemplo de requisição e resposta HTTP e tabela de Content-Type), tratamento de erros, estrutura de pastas e como executar (`go run main.go`, a flag `-porta`, o acesso pelo navegador e o teste com `curl` e `cmp`). Acrescentou uma tabela com o status de R1 a R6.
+  - Rodou o servidor numa pasta temporária para conferir os exemplos. Corrigiu o exemplo de log, que não mostrava uma conexão por arquivo, e acrescentou uma nota sobre as linhas de depuração que o servidor ainda imprime.
+  - Commitou o README e este diário com coautoria da IA, porque o texto do README foi escrito pela ferramenta.
+- **O que aprendi ou aproveitei:** usei o README como documentação do repositório. A tabela de status deve ser atualizada a cada requisito concluído.
+- **O que NÃO foi usado:** o README é só documentação. Nenhum código do servidor foi gerado ou alterado.
