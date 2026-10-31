@@ -1,17 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 )
 
 func main() {
-	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor")   // retorna *int (um ponteiro)
-	flag.Parse()                              // sem isso, *n fica sempre no valor padrão
+	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor")// retorna *int (um ponteiro)
+	flag.Parse() // sem isso, *n fica sempre no valor padrão
 	fmt.Println(*n)
 	PORTA := ""
+
 	if *n >= 1 && *n <= 65535 {
 		PORTA = ":" + strconv.Itoa(*n)
 	} else {
@@ -22,7 +25,7 @@ func main() {
 	listener, err := net.Listen("tcp", PORTA)
 
 	if err != nil {
-		fmt.Println("Erro ao iniciar o servidor: ", err)
+		fmt.Println("[ERRO] Erro ao iniciar o servidor: ", err)
 		return
 	}
 	defer listener.Close()
@@ -31,7 +34,7 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Erro ao aceitar uma conexão: ", err)
+			fmt.Println("[ERRO] Erro ao aceitar uma conexão: ", err)
 			continue
 		}
 
@@ -48,13 +51,68 @@ func handleClient(conn net.Conn) {
 	defer conn.Close()
 
 	fmt.Printf("[CONEXÃO] Nova conexão de %s\n", conn.RemoteAddr())
-	buf := make([]byte, 1024)
+	
+	reader := bufio.NewReader(conn)
+	// lib que permite ler linha, independente de quantos pacotes tcp chegaram
 
+	method, path, err := getRequestLine(reader)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	contentLenght, err := getContentLenght(reader)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("[REQUEST] Método: %s | Path: %s | Content-Length: %d\n", method, path, contentLenght)
+}
+
+func getRequestLine(reader *bufio.Reader) (string, string, error) {
+	requestLine, err := reader.ReadString('\n') // le uma linha so
+	if err != nil {
+		return "", "", fmt.Errorf("[ERRO] Erro ao ler a request line: %v", err)
+	}
+	requestLine = strings.TrimSpace(requestLine) // so p tirar os \r\n do final
+	// fmt.Printf("\n--- Linha Inicial ---\n%s\n", requestLine)
+
+	requestLineItems := strings.Fields(requestLine) // separa a string independente da quant de espacos em branco (melhor que split(" "))
+	if len(requestLineItems) == 3 {
+		method := requestLineItems[0]
+		path := requestLineItems[1]
+		return method, path, nil
+	}
+
+	return "", "", fmt.Errorf("[ERRO] linha inicial do HTTP malformada")
+
+
+}
+
+func getContentLenght(reader *bufio.Reader) (int, error) {
+	var contentLength int
 	for {
-		_, err := conn.Read(buf)
+		line, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Printf("Cliente desconectado ou erro de leitura: %v\n", err)
+			return 0, fmt.Errorf("[ERRO] Erro ao ler o header: %v\n", err)
+		}
+		line = strings.TrimSpace(line)
+
+		if line == "" {
 			break
 		}
+		// fmt.Println(line)
+		if strings.HasPrefix(strings.ToLower(line), "content-length:") {
+			_, err := fmt.Sscanf(strings.ToLower(line), "content-length: %d", &contentLength) // endereco de memoria pra atualizar a variavel, coloca %d dentro de contentLenght
+			if err != nil {
+				return 0, fmt.Errorf("[ERRO] Content-Lenght inválido: %v", err)
+			}
+
+			if contentLength < 0 {
+				return 0, fmt.Errorf("[ERRO] Content-Lenght inválido\n")
+			}
+		}
 	}
+
+	return contentLength, nil
 }
