@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+	// printf 'POST /x HTTP/1.1\r\nContent-Length: -5\r\n\r\n' | nc localhost 9000
 	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor")// retorna *int (um ponteiro)
 	flag.Parse() // sem isso, *n fica sempre no valor padrão
 	fmt.Println(*n)
@@ -80,13 +81,21 @@ func getRequestLine(reader *bufio.Reader) (string, string, error) {
 	requestLineItems := strings.Fields(requestLine) // separa a string independente da quant de espacos em branco (melhor que split(" "))
 	if len(requestLineItems) == 3 {
 		method := requestLineItems[0]
-		path := requestLineItems[1]
+		path := normalizeHttpPath(requestLineItems[1])
 		return method, path, nil
 	}
 
 	return "", "", fmt.Errorf("[ERRO] linha inicial do HTTP malformada")
 
 
+}
+
+func normalizeHttpPath(path string) (string) {
+	if path == "/" {
+		return "/index.html"
+	}
+
+	return path
 }
 
 func getContentLenght(reader *bufio.Reader) (int, error) {
