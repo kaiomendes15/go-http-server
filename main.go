@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -68,6 +69,13 @@ func handleClient(conn net.Conn) {
 		return
 	}
 	fmt.Printf("[REQUEST] Método: %s | Path: %s | Content-Length: %d\n", method, path, contentLenght)
+
+	if method == "GET" {
+		// Quando o método da requisição for GET, o servidor deve procurar o arquivo correspondente ao path dentro do diretório
+		contentPath := filepath.Join("public", path)
+		// essa lib ja eh multiplataforma, serve tanto para construir o path no linux `/`, quanto no windows `\`
+		fmt.Printf("SYSTEM FILE PATH -> %s\n", contentPath)
+	}
 }
 
 func getRequestLine(reader *bufio.Reader) (string, string, error) {
