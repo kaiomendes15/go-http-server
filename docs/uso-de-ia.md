@@ -292,3 +292,15 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Moveu o R3.1 para Concluído e o marcou como completo. Moveu o R3.3 (desbloqueado) para A Fazer.
 - **O que aprendi ou aproveitei:** -
 - **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-10-31 ~17:00 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R3 (card R3.2) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** pedi que a ferramenta verificasse se eu tinha concluído o R3.2 (detecção do Content-Type pela extensão). Depois da correção, pedi que atualizasse o card, registrasse a sessão e commitasse.
+- **O que a IA respondeu ou fez:**
+  - Leu o diff do meu `main.go` (sem alterá-lo), rodou o `go vet` (sem avisos), compilou o código numa pasta temporária e testou com `curl` os paths `/`, `/style.css`, `/img/a.png`, `/a.jpg`, `/a.jpeg` e `/a.txt`.
+  - Na primeira verificação, apontou que o `switch` tratava `.jpeg`, mas não o `.jpg` exigido pela tabela do enunciado. Apontou também uma variável global `extensions` sem uso, e que o critério do card previa um fallback para extensão desconhecida, enquanto eu retorno um erro.
+  - Corrigi o `.jpg` e removi a variável. Na segunda verificação, as quatro extensões da tabela retornaram o tipo certo, e as desconhecidas retornaram erro.
+  - A meu pedido, trocou o critério do card para "uma extensão desconhecida retorna erro", ajustou o ponto de defesa correspondente, moveu o R3.2 para Concluído e o marcou como completo. O R3.4 continua bloqueado pelo R3.3.
+- **O que aprendi ou aproveitei:** a conferência do `switch` com a tabela do enunciado. **Decisão de escopo:** uma extensão desconhecida retorna erro em vez de usar `application/octet-stream`.
+- **O que NÃO foi usado:** o fallback `application/octet-stream`. Nenhum código foi gerado ou alterado.
