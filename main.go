@@ -14,6 +14,11 @@ import (
 	"strings"
 )
 
+type Fields struct {
+	Key   string
+	Value string
+}
+
 func main() {
 	// printf 'POST /x HTTP/1.1\r\nContent-Length: -5\r\n\r\n' | nc localhost 9000
 	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor") // retorna *int (um ponteiro)
@@ -92,7 +97,8 @@ func handleClient(conn net.Conn) {
 			return
 		}
 
-		fmt.Println(string(buf))
+		fields := sliceFields(buf)
+		fmt.Println(fields)
 		return
 	}
 }
@@ -105,6 +111,28 @@ func postContent(path string, contentLength int, reader *bufio.Reader) ([]byte, 
 	}
 	fmt.Println("POST para ", path)
 	return buf, nil
+}
+
+func sliceFields(body []byte) []Fields {
+	strBody := string(body)
+	keyValues := strings.Split(strBody, "&")
+	fmt.Println("Original:", keyValues)
+	// bodyMap := make(map[string]string)
+	// essa merda de map nn preservava a ordem dos valores
+	// fiz uma struct pra padronizar um objeto chave/valor
+	slicedFields := []Fields{}
+	for _, kv := range keyValues {
+		// strings.Cut retorna: antes do '=', depois do '=', e se achou o '='
+		key, value, found := strings.Cut(kv, "=")
+		if found {
+			slicedFields = append(slicedFields, Fields{Key: key, Value: value})
+			fmt.Printf("Chave: %s | Valor: %s\n", key, value)
+		} else {
+			fmt.Printf("Apenas chave (sem valor): %s\n", key)
+		}
+	}
+
+	return slicedFields
 }
 
 func getContent(
