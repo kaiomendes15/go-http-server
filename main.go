@@ -92,30 +92,64 @@ func handleClient(conn net.Conn) {
 			fmt.Printf("[ERRO] Problema ao retornar response para o client: %v\n", err)
 		}
 	case "POST":
-		buf, err := postContent(path, contentLenght, reader)
+		response, err := postContent(version, contentLenght, reader)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		fields, err := sliceFields(buf)
+		_, err = conn.Write(response)
 		if err != nil {
-			fmt.Println(err)
-			return
+			fmt.Printf("[ERRO] Problema ao retornar response para o client: %v\n", err)
 		}
-		fmt.Println(fields)
 		return
 	}
 }
 
-func postContent(path string, contentLength int, reader *bufio.Reader) ([]byte, error) {
+func buildHtmlPage(fields []Fields) string {
+	var builder strings.Builder
+
+	builder.WriteString("<html lang='pt-br'>\n")
+	builder.WriteString("<head>\n")
+	builder.WriteString("<meta charset='UTF-8'>\n")
+	builder.WriteString("</head>\n")
+	builder.WriteString("<body>\n")
+	builder.WriteString("<h1>Dados Recebidos</h1>\n")
+	builder.WriteString("<ul>\n")
+
+	for _, field := range fields {
+		// A variável 'campo' contém a struct atual da iteração
+		listItem := fmt.Sprintf("<li><strong>%s:</strong> %s</li>\n", field.Key, field.Value)
+		builder.WriteString(listItem)
+	}
+
+	builder.WriteString("</ul>\n")
+	builder.WriteString("</body>\n")
+	builder.WriteString("</html>")
+
+	return builder.String()
+}
+
+func postContent(version string, contentLength int, reader *bufio.Reader) ([]byte, error) {
 	buf := make([]byte, contentLength)
 	_, err := io.ReadFull(reader, buf)
 	if err != nil {
 		return nil, fmt.Errorf("[ERRO] Nenhum ou menos bytes que o Content-Length foram lidos.")
 	}
 	// fmt.Println("POST para ", path)
-	return buf, nil
+	fields, err := sliceFields(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	html := buildHtmlPage(fields)
+	responseBody := []byte(html)
+	responseContentLength := len(responseBody)
+	responseHeader := buildHeader(version, 200, "OK", "text/html", responseContentLength)
+
+	response := buildResponse(responseHeader, responseBody)
+	fmt.Printf("[RESPONSE] Resposta dinâmica enviada (text/html, %d bytes)\n", responseContentLength)
+	return response, nil
 }
 
 func sliceFields(body []byte) ([]Fields, error) {
