@@ -24,7 +24,7 @@ func main() {
 	// printf 'POST /x HTTP/1.1\r\nContent-Length: -5\r\n\r\n' | nc localhost 9000
 	n := flag.Int("porta", 9000, "Porta dinamica para rodar o servidor") // retorna *int (um ponteiro)
 	flag.Parse()                                                         // sem isso, *n fica sempre no valor padrão
-	fmt.Println(*n)
+	// fmt.Println(*n)
 	PORTA := ""
 
 	if *n >= 1 && *n <= 65535 {
@@ -202,7 +202,7 @@ func getContent(
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(contentType)
+	// fmt.Println(contentType)
 
 	fileBytes, err := os.ReadFile(contentPath)
 	if err != nil {
@@ -223,7 +223,7 @@ func getContent(
 	fmt.Printf("[ARQUIVO] Servindo %s (%s, %d bytes)\n", path, contentType, contentLength)
 
 	responseHeader := buildHeader(version, 200, "OK", contentType, contentLength)
-	fmt.Println(responseHeader)
+	// fmt.Println(responseHeader)
 	response := buildResponse(responseHeader, fileBytes)
 
 	return response, nil
