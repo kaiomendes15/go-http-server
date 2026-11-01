@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"os"
@@ -72,7 +73,8 @@ func handleClient(conn net.Conn) {
 	}
 	fmt.Printf("[REQUEST] Método: %s | Path: %s | Content-Length: %d\n", method, path, contentLenght)
 
-	if method == "GET" {
+	switch method {
+	case "GET":
 		response, err := getContent(path, version)
 		if err != nil {
 			fmt.Println(err)
@@ -83,7 +85,26 @@ func handleClient(conn net.Conn) {
 		if err != nil {
 			fmt.Printf("[ERRO] Problema ao retornar response para o client: %v\n", err)
 		}
+	case "POST":
+		buf, err := postContent(path, contentLenght, reader)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		fmt.Println(string(buf))
+		return
 	}
+}
+
+func postContent(path string, contentLength int, reader *bufio.Reader) ([]byte, error) {
+	buf := make([]byte, contentLength)
+	_, err := io.ReadFull(reader, buf)
+	if err != nil {
+		return nil, fmt.Errorf("[ERRO] Nenhum ou menos bytes que o Content-Length foram lidos.")
+	}
+	fmt.Println("POST para ", path)
+	return buf, nil
 }
 
 func getContent(
