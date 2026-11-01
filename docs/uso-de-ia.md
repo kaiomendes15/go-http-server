@@ -428,3 +428,28 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Atualizou o `README.md`: o R4 passou para ✅, o arquivo inexistente saiu da lista de erros que fecham a conexão (agora o servidor responde com 404) e o `not_found.html` entrou na estrutura de pastas.
 - **O que aprendi ou aproveitei:** troquei `contentPath` por `path` no log e tirei o espaço do fim da string. Aprendi que o `Println` separa os argumentos com espaço. Os critérios do navegador (texto com acento e status 404 na aba Network do DevTools) ficaram para eu conferir.
 - **O que NÃO foi usado:** nenhum código do servidor foi gerado ou alterado pela ferramenta.
+
+### 2026-11-01 ~10:35 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R5 (cards R5.1 e R5.2) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** depois de implementar o R5.1, mostrei o log do servidor e perguntei por que o terminal imprimia `[ERRO] Erro ao ler a request line: EOF` antes de cada POST que eu enviava. Depois pedi que a ferramenta registrasse a consulta e movesse o R5.1 para Concluído.
+- **O que a IA respondeu ou fez:**
+  - Explicou que o `EOF` aparece quando o cliente abre uma conexão TCP e a fecha sem enviar nenhum byte: o `reader.ReadString('\n')` chega ao fim do fluxo sem encontrar o `\n` e devolve o erro. Não é um problema do código do R5.1.
+  - Comparou dois testes no servidor compilado numa pasta temporária: um `POST /submit` com `curl` gerou só a conexão do POST, e uma conexão aberta e fechada sem dados reproduziu a mesma linha de EOF do meu log. Concluiu que as conexões vazias vêm do cliente que usei para o POST (ferramentas como Postman ou Insomnia, ou o navegador, que pode abrir uma conexão antecipada e fechá-la sem usar).
+  - Observou que o `curl` termina com `Empty reply from server` porque o ramo do POST ainda não envia resposta, o que é esperado até o R6.
+  - Conferiu os critérios do R5.1: `GET /` e `GET /style.css` continuam com 200, `/nao-existe.html` com 404, e o `POST /submit` chega ao handler (log `POST para /submit`). Moveu o R5.1 para Concluído e o marcou como completo. Moveu para A Fazer o R5.2, que ele desbloqueia.
+- **O que aprendi ou aproveitei:** o significado do `EOF` na leitura da request line e como reproduzi-lo com uma conexão vazia. O servidor já trata esse caso: registra o erro, fecha a conexão e continua aceitando outras.
+- **O que NÃO foi usado:** nenhum código foi gerado ou alterado.
+
+### 2026-11-01 ~10:45 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R5 (cards R5.2 e R5.3), R6 (visão geral) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** perguntei como ler o body a partir do Content-Length e se um `conn.Read` com um buffer desse tamanho bastava. Depois perguntei se o `io.ReadFull` devolve a quantidade de bytes lidos e como devolver uma resposta estruturada ao usuário. Por fim, pedi duas revisões da minha implementação do R5.2 e que a ferramenta o concluísse e registrasse neste diário.
+- **O que a IA respondeu ou fez:**
+  - Explicou que o buffer do tamanho do Content-Length está certo, mas o `conn.Read` tem dois problemas. Primeiro, o `bufio.Reader` dos headers pode já ter puxado parte ou todo o body para o buffer interno, então a leitura precisa usar o mesmo `reader` e não a `conn`. Segundo, um único `Read` pode devolver menos bytes do que o pedido, porque TCP é um fluxo. Indicou o `io.ReadFull`, que repete o `Read` até preencher o buffer ou devolve erro (`io.ErrUnexpectedEOF`).
+  - Esclareceu que o `int` do `io.ReadFull` é só a contagem de bytes: os dados ficam no próprio buffer, e `string(buf)` dá o texto para o R5.3. Explicou que a resposta estruturada é o R6: o HTML é gerado pelo código a partir dos campos e enviado com o `buildHeader` e o `buildResponse` que já existem (200, `text/html`, Content-Length em bytes), mais o log `[RESPONSE]`. Para isso, o ramo do POST também precisa da `version`.
+  - Na primeira revisão, testou com `curl` e apontou que o handler descartava o retorno do `postContent`: o body lido não aparecia no log e, com um body curto (anunciando 20 bytes e mandando 5), o erro do `io.ReadFull` não era impresso. Indicou também que o `gofmt` acusava o `main.go` (falta um espaço em `([]byte, error){`), que a mensagem de erro fixa perde o erro original (`EOF` x `unexpected EOF`) e, fora do escopo, que sem um timeout o `ReadFull` espera para sempre se o cliente não fechar a conexão.
+  - Na segunda revisão, confirmou que o `curl` do card teve o body de 36 bytes lido inteiro, igual ao Content-Length, que o body curto agora registra o erro e encerra, e que o `GET /` continua com 200.
+  - Avisou que o critério "envio pelo formulário do navegador" não tinha como ser testado, porque o formulário (A.2) ainda não existe. Com a minha autorização, moveu o R5.2 para Concluído, marcou como completo, deixou um comentário no card sobre esse teste pendente (será conferido no R5.5) e moveu o R5.3 para A Fazer.
+- **O que aprendi ou aproveitei:** passei o `reader` para o `postContent` e li o body com `io.ReadFull`. No handler, passei a receber o `buf` e o `err`, imprimir o erro com `return` e mostrar `string(buf)` como log temporário. Para a defesa: por que o mesmo `bufio.Reader` resolve o body adiantado e a diferença entre `io.ReadFull` e um único `Read`.
+- **O que NÃO foi usado:** a mensagem de erro continua fixa, e o timeout de leitura não foi implementado. Nenhum código foi gerado ou alterado pela ferramenta.
