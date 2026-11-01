@@ -465,3 +465,15 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Moveu o R5.3 para Concluído e o marcou como completo. Moveu para A Fazer o R5.4, que ele desbloqueia.
 - **O que aprendi ou aproveitei:** troquei o `map` por um slice da `struct` `Fields` (declarada no nível do pacote) e usei `strings.Cut` para separar cada par no primeiro `=`. Renomeei a função para `sliceFields` e fiz com que ela retornasse o slice. Para a defesa: por que separar antes de decodificar (um `%26` decodificado viraria `&`) e por que o `map` não serve para manter a ordem.
 - **O que NÃO foi usado:** o comentário com palavrão continua no código. Nenhum código foi gerado ou alterado pela ferramenta.
+
+### 2026-11-01 ~17:30 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R5 (cards R5.4, R5.5 e R6.1) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** perguntei qual era a melhor forma de aplicar o decode do R5.4. Depois de implementar, pedi que a ferramenta verificasse o código e, por fim, que movesse o card, registrasse neste diário e commitasse.
+- **O que a IA respondeu ou fez:**
+  - Explicou que o `url.QueryUnescape` deve ser aplicado em cada pedaço depois do `strings.Cut`, e não no body inteiro antes do `Split`, porque um `%26` decodificado viraria `&` e quebraria os pares. Sugeriu decodificar também a chave. Explicou que só o `QueryUnescape` converte `+` em espaço (o `PathUnescape` não converte), que a função devolve erro quando o `%` não vem seguido de dois dígitos hexadecimais (`100%`, `%ZZ`) e que esse erro não deve ser ignorado. Observou que o `%C3%A3` vira os dois bytes UTF-8 do `ã`.
+  - Na revisão, testou numa cópia do código com `curl`: `Jo%C3%A3o+Silva` → `João Silva`, `joao%40email.com` → `joao@email.com`, `Programa%C3%A7%C3%A3o` → `Programação` e `a%26b=c%3Dd` → `{a&b c=d}`. Com `100%` e `%ZZ`, o servidor registra o `[ERRO]`, fecha a conexão e continua atendendo. O `gofmt` e o `go vet` passam.
+  - Apontou três observações, nenhuma bloqueando o card: um par malformado descarta o body inteiro e o cliente fica sem resposta (decidir no R6); o `Errorf` sem `%w` perde a mensagem original da `QueryUnescape`; e o `Printf` do laço ainda mostra os valores codificados, o que fica para o formato de log do R5.5.
+  - Moveu o R5.4 para Concluído e o marcou como completo. Como o A.2 já estava concluído, moveu o R5.5 e o R6.1 para A Fazer.
+- **O que aprendi ou aproveitei:** criei a função `decodeValue` com o `url.QueryUnescape`, decodifiquei chave e valor dentro do laço do `sliceFields` e fiz a função devolver `([]Fields, error)`, tratando o erro no handler. Para a defesa: por que `QueryUnescape` e não `PathUnescape`, o que significa `%40` (byte 0x40 = `@`) e por que o `ã` ocupa duas sequências `%XX`.
+- **O que NÃO foi usado:** o erro continua com mensagem fixa (sem `%w`), e o log do laço ainda mostra os valores codificados. Nenhum código foi gerado ou alterado pela ferramenta.
