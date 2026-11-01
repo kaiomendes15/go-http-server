@@ -30,7 +30,7 @@ localiza o arquivo pedido em `./public/` e devolve uma resposta HTTP completa
 | R1 | Servidor TCP com conexões simultâneas (goroutines) | ✅ |
 | R2 | Parsing da requisição (método, path, headers, `Content-Length`) | ✅ |
 | R3 | Servir arquivos estáticos (HTML, CSS e imagens) | ✅ |
-| R4 | Página de erro 404 | 🚧 |
+| R4 | Página de erro 404 | ✅ |
 | R5 | Processamento de requisições POST (`x-www-form-urlencoded`) | 🚧 |
 | R6 | Resposta dinâmica ao POST | 🚧 |
 
@@ -71,7 +71,8 @@ Nos casos abaixo, o servidor registra o erro no terminal e fecha a conexão:
 - **Request line malformada** → `[ERRO] linha inicial do HTTP malformada`
 - **`Content-Length` inválido ou negativo** → `[ERRO] Content-Length inválido`
 - **Extensão fora da tabela** → `[ERRO] formato de arquivo inválido.`
-- **Arquivo inexistente** → `[ERRO 404] Arquivo não encontrado` (a página 404 vem no R4)
+
+Quando o arquivo pedido não existe, o servidor responde `HTTP/1.1 404 Not Found` com a página `public/not_found.html` e registra `[404] Recurso não encontrado: /nao-existe.html`.
 
 ## 📁 Estrutura
 
@@ -82,6 +83,7 @@ go-http-server/
 │   ├── index.html
 │   ├── about.html
 │   ├── style.css
+│   ├── not_found.html   # página do 404
 │   ├── neymar.jpg
 │   └── cris.jpg
 └── docs/

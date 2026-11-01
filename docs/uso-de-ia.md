@@ -401,3 +401,30 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Commitou o README e este diário com coautoria da IA, porque o texto do README foi escrito pela ferramenta.
 - **O que aprendi ou aproveitei:** usei o README como documentação do repositório. A tabela de status deve ser atualizada a cada requisito concluído.
 - **O que NÃO foi usado:** o README é só documentação. Nenhum código do servidor foi gerado ou alterado.
+
+### 2026-11-01 ~09:50 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R4 (cards R4.2 e R4.3) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** informei que tinha implementado o R4.2 e pedi que a ferramenta verificasse. Depois de trocar o texto da página, pedi que registrasse a consulta neste diário e atualizasse o quadro.
+- **O que a IA respondeu ou fez:**
+  - Compilou o código numa pasta temporária (o `go vet` não apontou nada) e testou com `curl`. `/nao-existe.html` voltou com `HTTP/1.1 404 Not Found`, `Content-Type: text/html` e um Content-Length igual ao tamanho de `public/not_found.html`, e `/` continuou voltando com 200.
+  - Confirmou que a função `notFound` reaproveita o `buildHeader` e o `buildResponse` do R3.4.
+  - Apontou que o texto da página (`404 - PAGE NOT FOUND`) era diferente do enunciado (`404 - Não Encontrado` e "O recurso solicitado não existe."), que é o texto conferido no teste do R4.3. Sem o "ã", também não dava para verificar o critério do acento.
+  - Depois da minha troca, refez o teste: o arquivo tem 279 bytes e 277 caracteres (os dois "ã" ocupam 2 bytes cada em UTF-8), e o Content-Length enviado foi 279.
+  - Lembrou a pendência do R4.1: como o `getContentType` roda antes do `ReadFile`, `/favicon.ico` e paths sem extensão não recebem resposta nenhuma, nem 404. O teste do enunciado usa `.html`, então isso não bloqueia o R4.
+  - Moveu o R4.2 para Concluído e o marcou como completo. Moveu para A Fazer o R4.3, que ele desbloqueia.
+- **O que aprendi ou aproveitei:** troquei o texto de `public/not_found.html` pelo do enunciado (e também `lang="pt-br"` e o `<title>`). Para a defesa: o `len` de um `[]byte` conta bytes, por isso o Content-Length bate mesmo com acento; e escolhi a página em arquivo, e não fixa no código, para poder editá-la sem recompilar e usar o mesmo caminho de leitura do R3.
+- **O que NÃO foi usado:** a ordem entre a verificação da extensão e a do 404 continua como estava (é opcional para o enunciado). Nenhum código foi gerado ou alterado.
+
+### 2026-11-01 ~10:05 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R4 (card R4.3), documentação e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** pedi que a ferramenta concluísse também o R4.3 e, depois de cada ajuste meu no log, que verificasse de novo.
+- **O que a IA respondeu ou fez:**
+  - Na primeira verificação, apontou que o log `[404]` ainda não existia no código. A única linha com "404" era o `[ERRO 404]` da função `notFound`, que só aparece quando falta o próprio `not_found.html`. Indicou que o `path` pedido pelo cliente está disponível no ramo `fs.ErrNotExist` do `getContent`, e não dentro da `notFound`.
+  - Depois que eu escrevi o log, testou com `curl` e mostrou duas diferenças em relação ao enunciado: o log imprimia o `contentPath` (`public/nao-existe.html`) em vez do `path` (`/nao-existe.html`), e havia dois espaços depois de "encontrado:", porque o `fmt.Println` já põe um espaço entre os argumentos e a string terminava com outro.
+  - Depois das minhas duas correções, confirmou o log `[404] Recurso não encontrado: /nao-existe.html`, a resposta 404 com Content-Length 279 e que `/` continua voltando 200.
+  - Moveu o R4.3 para Concluído e o marcou como completo. O I.2 continua bloqueado, porque ainda depende do R5.5 e do R6.4.
+  - Atualizou o `README.md`: o R4 passou para ✅, o arquivo inexistente saiu da lista de erros que fecham a conexão (agora o servidor responde com 404) e o `not_found.html` entrou na estrutura de pastas.
+- **O que aprendi ou aproveitei:** troquei `contentPath` por `path` no log e tirei o espaço do fim da string. Aprendi que o `Println` separa os argumentos com espaço. Os critérios do navegador (texto com acento e status 404 na aba Network do DevTools) ficaram para eu conferir.
+- **O que NÃO foi usado:** nenhum código do servidor foi gerado ou alterado pela ferramenta.
