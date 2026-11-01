@@ -512,3 +512,13 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Moveu o R6.4 e o I.2 para Concluído, marcou os dois como completos e deixou um comentário em cada um (o R6.2 ficou como opcional, sem bloquear o R6.4). Moveu o I.3 e o E.2 para A Fazer.
 - **O que aprendi ou aproveitei:** comentei os três prints de depuração (a porta, o Content-Type e os headers da resposta) para deixar os logs iguais aos do enunciado. Testei pelo navegador as partes que a ferramenta não podia testar: as 3 abas, o CSS com a imagem e a página de 404.
 - **O que NÃO foi usado:** o log de `EOF` continua. O R6.2 (escape do HTML) não foi implementado. Nenhum código foi gerado ou alterado pela ferramenta.
+
+### 2026-11-01 ~19:10 (BRT) · Claude Code (modelo Claude Opus 5.5)
+- **Requisito relacionado:** documentação (README), cobrindo o R5 e o R6
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** pedi que a ferramenta atualizasse o `README.md` com o estado atual do projeto e depois que commitasse e registrasse neste diário.
+- **O que a IA respondeu ou fez:**
+  - Atualizou o `README.md`: marcou o R5 e o R6 como concluídos e acrescentou à introdução o POST do formulário. Incluiu nas tecnologias o `io.ReadFull`, o `net/url` (`QueryUnescape`) e o `strings.Builder`. Criou a seção "POST do formulário", com a requisição, a ordem separar → decodificar e a resposta com o Content-Length em bytes. Acrescentou os dois erros do POST, o `public/form.html` na estrutura e um passo para enviar o formulário, com os logs `[POST]` e `[RESPONSE]` e um `curl` de POST. Tirou o aviso sobre os prints de depuração, que já tinham sido removidos.
+  - Conferiu os logs de exemplo rodando uma cópia do servidor. Corrigiu o tamanho da resposta, que tinha reaproveitado de outro teste (207 bytes), para o valor real do exemplo (240 bytes).
+- **O que aprendi ou aproveitei:** o README passou a descrever o fluxo completo do servidor, incluindo o POST, o que também serve de roteiro para o ensaio da defesa (I.3).
+- **O que NÃO foi usado:** o README não menciona que o servidor aceita POST em qualquer path, porque o enunciado não exige outra coisa. Nenhum código Go foi gerado ou alterado pela ferramenta.
