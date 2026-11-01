@@ -477,3 +477,14 @@ Este diário registra todas as interações com ferramentas de IA durante o proj
   - Moveu o R5.4 para Concluído e o marcou como completo. Como o A.2 já estava concluído, moveu o R5.5 e o R6.1 para A Fazer.
 - **O que aprendi ou aproveitei:** criei a função `decodeValue` com o `url.QueryUnescape`, decodifiquei chave e valor dentro do laço do `sliceFields` e fiz a função devolver `([]Fields, error)`, tratando o erro no handler. Para a defesa: por que `QueryUnescape` e não `PathUnescape`, o que significa `%40` (byte 0x40 = `@`) e por que o `ã` ocupa duas sequências `%XX`.
 - **O que NÃO foi usado:** o erro continua com mensagem fixa (sem `%w`), e o log do laço ainda mostra os valores codificados. Nenhum código foi gerado ou alterado pela ferramenta.
+
+### 2026-11-01 ~18:00 (BRT) · Claude Code (modelo Claude Opus 5.5) + integração com o Trello
+- **Requisito relacionado:** R5 (card R5.5, com o teste pendente do R5.2) e organização
+- **Nível de uso:** _<preencher conforme o guia institucional>_
+- **Pergunta ou solicitação:** pedi duas revisões da minha implementação dos logs `[POST]` do R5.5. Depois de fazer o teste pelo navegador, pedi que a ferramenta movesse o card, registrasse neste diário e commitasse.
+- **O que a IA respondeu ou fez:**
+  - Na primeira revisão, testou numa cópia do código com `curl`. O log do body bruto já mostrava o `+`, e os 56 bytes batiam com o Content-Length. Apontou três problemas: o `Printf` do campo não tinha `\n` e os três campos saíam na mesma linha; o `gofmt` acusava um espaço depois do `}`; e o log ficava antes do `if found`, então registrava pares que não entravam no slice (com `a=1&&semigual`, aparecia `[POST] Campo:  = `). Como opcional, citou os logs de depuração que não estão no formato do enunciado.
+  - Na segunda revisão, confirmou que os logs seguiam o formato do enunciado, que o log e o slice tinham os mesmos pares, que o erro de decode passou a mostrar a causa (`invalid URL escape "%ZZ"`) e que o `gofmt` e o `go vet` passavam. Lembrou que o teste pelo navegador só eu podia fazer.
+  - Com o meu log do navegador (`Body bruto (48 bytes)` com `Content-Length: 48` e `nome = João Silva`), moveu o R5.5 para Concluído, marcou como completo e deixou um comentário no card com o resultado, que também fecha o teste pendente do R5.2. O I.2 continua bloqueado pelos cards do R6.
+- **O que aprendi ou aproveitei:** troquei os logs de depuração pelos `[POST] Body bruto` e `[POST] Campo` do enunciado, coloquei o log do campo dentro do `if found` e acrescentei o `\n`. Também passei a incluir o erro original com `%w` no `decodeValue`. Para a defesa: por que o `Printf` precisa do `\n` e o `Println` não, e por que, pelo navegador, o body bruto chega com os acentos codificados (`Jo%C3%A3o`), diferente do exemplo do enunciado.
+- **O que NÃO foi usado:** o `fmt.Println(fields)` e os logs de depuração do GET continuam no código, para limpar no I.2. Nenhum código foi gerado ou alterado pela ferramenta.
