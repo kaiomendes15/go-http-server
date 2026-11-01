@@ -102,7 +102,13 @@ func getContent(
 	fileBytes, err := os.ReadFile(contentPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("[ERRO 404] Arquivo não encontrado: %v", err) // aqui vou montar a resposta com a pagina 404
+			fmt.Println("[404] Recurso não encontrado:", path)
+			notFoundResponse, err2 := notFound(version)
+			if err2 != nil {
+				return nil, err2
+			}
+
+			return notFoundResponse, nil
 		}
 
 		return nil, fmt.Errorf("[ERRO] Erro ao ler o arquivo: %v", err)
@@ -114,6 +120,30 @@ func getContent(
 	responseHeader := buildHeader(version, 200, "OK", contentType, contentLength)
 	fmt.Println(responseHeader)
 	response := buildResponse(responseHeader, fileBytes)
+
+	return response, nil
+}
+
+func notFound(
+	version string,
+) ([]byte, error) {
+	notFoundPagePath := filepath.Join("public", "not_found.html")
+	notFoundPage, err := os.ReadFile(notFoundPagePath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("[ERRO 404] Arquivo não encontrado: %v", err)
+		}
+
+		return nil, fmt.Errorf("[ERRO] Erro ao ler o arquivo: %v", err)
+	}
+	contentLength := len(notFoundPage)
+	contentType, err := getContentType(notFoundPagePath)
+	if err != nil {
+		return nil, err
+	}
+
+	header := buildHeader(version, 404, "Not Found", contentType, contentLength)
+	response := buildResponse(header, notFoundPage)
 
 	return response, nil
 }
