@@ -114,14 +114,14 @@ func postContent(path string, contentLength int, reader *bufio.Reader) ([]byte, 
 	if err != nil {
 		return nil, fmt.Errorf("[ERRO] Nenhum ou menos bytes que o Content-Length foram lidos.")
 	}
-	fmt.Println("POST para ", path)
+	// fmt.Println("POST para ", path)
 	return buf, nil
 }
 
 func sliceFields(body []byte) ([]Fields, error) {
 	strBody := string(body)
+	fmt.Printf("[POST] Body bruto (%d bytes): %s\n", len(body), strBody)
 	keyValues := strings.Split(strBody, "&")
-	fmt.Println("Original:", keyValues)
 	// bodyMap := make(map[string]string)
 	// essa merda de map nn preservava a ordem dos valores
 	// fiz uma struct pra padronizar um objeto chave/valor
@@ -140,10 +140,8 @@ func sliceFields(body []byte) ([]Fields, error) {
 		}
 
 		if found {
+			fmt.Printf("[POST] Campo: %s = %s\n", decodedKey, decodedValue)
 			slicedFields = append(slicedFields, Fields{Key: decodedKey, Value: decodedValue})
-			fmt.Printf("Chave: %s | Valor: %s\n", decodedKey, decodedValue)
-		} else {
-			fmt.Printf("Apenas chave (sem valor): %s\n", decodedKey)
 		}
 	}
 
@@ -165,7 +163,7 @@ func getContent(
 	// Quando o método da requisição for GET, o servidor deve procurar o arquivo correspondente ao path dentro do diretório
 	contentPath := filepath.Join("public", path)
 	// essa lib ja eh multiplataforma, serve tanto para construir o path no linux `/`, quanto no windows `\`
-	fmt.Printf("SYSTEM FILE PATH -> %s\n", contentPath)
+	// fmt.Printf("SYSTEM FILE PATH -> %s\n", contentPath)
 	contentType, err := getContentType(contentPath)
 	if err != nil {
 		return nil, err
