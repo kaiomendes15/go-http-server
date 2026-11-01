@@ -9,6 +9,10 @@ localiza o arquivo pedido em `./public/` e devolve uma resposta HTTP completa
 (status line, headers, linha em branco e body) pela mesma conexão. Cada cliente
 é atendido em sua própria goroutine.
 
+O servidor também recebe o formulário de `public/form.html` por POST: lê o body
+pelo `Content-Length`, decodifica os campos `x-www-form-urlencoded` e responde
+com uma página HTML montada em tempo de execução com os dados recebidos.
+
 ## 🛠️ Tecnologias
 
 ![Go](https://img.shields.io/badge/Go-1.22-00ADD8?style=for-the-badge&logo=go&logoColor=white)
@@ -21,6 +25,9 @@ localiza o arquivo pedido em `./public/` e devolve uma resposta HTTP completa
 - **`bufio.Reader`** — leitura da requisição linha a linha, independente de quantos pacotes TCP chegaram
 - **`strings` / `strconv` / `fmt.Sscanf`** — parsing da request line e do `Content-Length`
 - **`os.ReadFile` / `path/filepath`** — leitura dos arquivos de `./public/` como bytes
+- **`io.ReadFull`** — leitura do body do POST com exatamente `Content-Length` bytes
+- **`net/url` (`QueryUnescape`)** — decodificação dos campos do formulário (`+` e `%XX`)
+- **`strings.Builder`** — montagem da página HTML dinâmica da resposta ao POST
 - **`flag`** — porta configurável pela linha de comando
 
 ## 📋 Requisitos
@@ -31,8 +38,8 @@ localiza o arquivo pedido em `./public/` e devolve uma resposta HTTP completa
 | R2 | Parsing da requisição (método, path, headers, `Content-Length`) | ✅ |
 | R3 | Servir arquivos estáticos (HTML, CSS e imagens) | ✅ |
 | R4 | Página de erro 404 | ✅ |
-| R5 | Processamento de requisições POST (`x-www-form-urlencoded`) | 🚧 |
-| R6 | Resposta dinâmica ao POST | 🚧 |
+| R5 | Processamento de requisições POST (`x-www-form-urlencoded`) | ✅ |
+| R6 | Resposta dinâmica ao POST | ✅ |
 
 ## 📡 Protocolo
 
@@ -64,6 +71,44 @@ extensão do arquivo:
 | `.png`   | `image/png`  |
 | `.jpg`   | `image/jpeg` |
 
+### POST do formulário
+
+Ao enviar o formulário, o navegador manda os campos no body, codificados como
+`application/x-www-form-urlencoded`:
+
+```
+POST /submit HTTP/1.1\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 48\r\n
+\r\n
+nome=Jo%C3%A3o+Silva&email=kaio%40email.com&msg=
+```
+
+O servidor lê exatamente `Content-Length` bytes do body, separa os pares por `&`,
+divide cada par no primeiro `=` e só então decodifica chave e valor (`+` vira
+espaço e `%XX` vira o byte correspondente). Separar antes de decodificar evita
+que um `%26` decodificado vire um `&` e quebre os pares. Os campos ficam em um
+slice, na ordem do formulário, e viram uma página com um `<li>` por campo:
+
+```
+HTTP/1.1 200 OK\r\n
+Content-Type: text/html\r\n
+Content-Length: 240\r\n
+\r\n
+<html lang='pt-br'>
+<head>
+<meta charset='UTF-8'>
+</head>
+<body>
+<h1>Dados Recebidos</h1>
+<ul>
+<li><strong>nome:</strong> João Silva</li>
+...
+```
+
+O `Content-Length` da resposta é o tamanho do HTML gerado em **bytes**, e não
+em caracteres: cada letra acentuada ocupa 2 bytes em UTF-8.
+
 ### Tratamento de erros
 
 Nos casos abaixo, o servidor registra o erro no terminal e fecha a conexão:
@@ -71,6 +116,8 @@ Nos casos abaixo, o servidor registra o erro no terminal e fecha a conexão:
 - **Request line malformada** → `[ERRO] linha inicial do HTTP malformada`
 - **`Content-Length` inválido ou negativo** → `[ERRO] Content-Length inválido`
 - **Extensão fora da tabela** → `[ERRO] formato de arquivo inválido.`
+- **Body do POST menor que o `Content-Length`** → `[ERRO] Nenhum ou menos bytes que o Content-Length foram lidos.`
+- **Sequência `%XX` inválida no body** (ex.: `%ZZ`) → `[ERRO] Formato inválido para decode no body: ...`
 
 Quando o arquivo pedido não existe, o servidor responde `HTTP/1.1 404 Not Found` com a página `public/not_found.html` e registra `[404] Recurso não encontrado: /nao-existe.html`.
 
@@ -82,6 +129,7 @@ go-http-server/
 ├── public/          # arquivos estáticos servidos
 │   ├── index.html
 │   ├── about.html
+│   ├── form.html        # formulário do POST /submit
 │   ├── style.css
 │   ├── not_found.html   # página do 404
 │   ├── neymar.jpg
@@ -138,15 +186,29 @@ requisição para cada arquivo, cada uma em sua própria conexão:
 [CONEXÃO] Encerrada [::1]:51786
 ```
 
-Por enquanto, o servidor também imprime linhas de depuração: o número da porta
-antes do log `[SERVIDOR]` e, entre os logs acima, o caminho no disco, o
-Content-Type e o cabeçalho da resposta.
+### 3. Envie o formulário
 
-### 3. Ou teste pelo terminal
+Abra `http://localhost:9000/form.html`, preencha e envie. O navegador mostra a
+página "Dados Recebidos" com os campos, e o terminal registra:
+
+```
+[REQUEST] Método: POST | Path: /submit | Content-Length: 48
+[POST] Body bruto (48 bytes): nome=Jo%C3%A3o+Silva&email=kaio%40email.com&msg=
+[POST] Campo: nome = João Silva
+[POST] Campo: email = kaio@email.com
+[POST] Campo: msg = 
+[RESPONSE] Resposta dinâmica enviada (text/html, 240 bytes)
+```
+
+O body bruto mostra os valores como o navegador os enviou (`+` e `%XX`), e cada
+`[POST] Campo` mostra o valor já decodificado.
+
+### 4. Ou teste pelo terminal
 
 ```bash
 curl -v http://localhost:9000/style.css
 curl -o out.jpg http://localhost:9000/neymar.jpg && cmp out.jpg public/neymar.jpg
+curl -v -d 'nome=Jo%C3%A3o+Silva&curso=Programa%C3%A7%C3%A3o' http://localhost:9000/submit
 ```
 
 O `cmp` não mostra diferença: a imagem chega byte a byte igual ao arquivo.
