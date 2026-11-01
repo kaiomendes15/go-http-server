@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -97,7 +98,11 @@ func handleClient(conn net.Conn) {
 			return
 		}
 
-		fields := sliceFields(buf)
+		fields, err := sliceFields(buf)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		fmt.Println(fields)
 		return
 	}
@@ -113,7 +118,7 @@ func postContent(path string, contentLength int, reader *bufio.Reader) ([]byte, 
 	return buf, nil
 }
 
-func sliceFields(body []byte) []Fields {
+func sliceFields(body []byte) ([]Fields, error) {
 	strBody := string(body)
 	keyValues := strings.Split(strBody, "&")
 	fmt.Println("Original:", keyValues)
@@ -124,15 +129,34 @@ func sliceFields(body []byte) []Fields {
 	for _, kv := range keyValues {
 		// strings.Cut retorna: antes do '=', depois do '=', e se achou o '='
 		key, value, found := strings.Cut(kv, "=")
+		decodedKey, err := decodeValue(key)
+		if err != nil {
+			return nil, err
+		}
+
+		decodedValue, err := decodeValue(value)
+		if err != nil {
+			return nil, err
+		}
+
 		if found {
-			slicedFields = append(slicedFields, Fields{Key: key, Value: value})
-			fmt.Printf("Chave: %s | Valor: %s\n", key, value)
+			slicedFields = append(slicedFields, Fields{Key: decodedKey, Value: decodedValue})
+			fmt.Printf("Chave: %s | Valor: %s\n", decodedKey, decodedValue)
 		} else {
-			fmt.Printf("Apenas chave (sem valor): %s\n", key)
+			fmt.Printf("Apenas chave (sem valor): %s\n", decodedKey)
 		}
 	}
 
-	return slicedFields
+	return slicedFields, nil
+}
+
+func decodeValue(value string) (string, error) {
+	decodedValue, err := url.QueryUnescape(value)
+	if err != nil {
+		return "", fmt.Errorf("[ERRO] Formato inválido para decode no body: %w", err)
+	}
+
+	return decodedValue, nil
 }
 
 func getContent(
